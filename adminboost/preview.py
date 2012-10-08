@@ -1,26 +1,69 @@
 from django import forms
-from django.utils.translation import ugettext as _
-from django.utils.safestring import mark_safe
-from django.contrib.admin.options import InlineModelAdmin
+
 from django.conf import settings
+from django.contrib.admin.options import InlineModelAdmin
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import default_storage
 from django.utils.encoding import force_unicode
+from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext as _
 
-
+from easy_thumbnails.files import get_thumbnailer, Thumbnailer
+from easy_thumbnails.exceptions import InvalidImageFormatError
 
 # Admin classes ------------------------------------------------------------
 
 
 class PreviewInline(InlineModelAdmin):
-    def __init__(self, *args, **kwargs):
-        # enforce use of fieldsets so we can inject the preview field
-        if not self.fieldsets:
-            self.__class__.fieldsets = (
-                (None, {'fields': self.form.base_fields}),)
-        super(PreviewInline, self).__init__(*args, **kwargs)
-        # inject 'preview' after super init since it won't validate
-        self.declared_fieldsets[0][1]['fields'] = ('preview',) + \
-            tuple(self.declared_fieldsets[0][1]['fields'])    
+    readonly_fields = ('preview',)
+
+    def get_fieldsets(self, request, obj=None):
+        """ Move preview field to front if generating default fieldset """
+        if self.declared_fieldsets:
+            return self.declared_fieldsets
+        form = self.get_formset(request, obj).form
+        fields = list(form.base_fields) + list(
+            self.get_readonly_fields(request, obj))
+        # implementation identical to 1.4 ModelAdmin.get_fieldsets apart from:
+        fields.remove('preview')
+        fields.insert(0, 'preview')
+        return [(None, {'fields': fields})]
+
+    def preview(self, obj):
+        if not(obj or obj.pk):
+            return u''
+        try:
+            images = obj.get_preview_images()
+        except AttributeError:
+            raise ImproperlyConfigured(
+                "PreviewInline only works with models which provide a "
+                "get_preview_images method."
+            )
+        options = dict(size=(120, 120), crop=False)
+        html = u'<div class="adminboost-preview">'
+        for image in images:
+            thumbnail = get_thumbnailer(image.file).get_thumbnail(options)
+            if isinstance(image.file, Thumbnailer):
+                image_url = default_storage.url(force_unicode(image.file.name))
+            else:
+                image_url = image.file.url
+            html += (
+                u'<div class="adminboost-preview-thumbnail">'
+                u'<a href="%(image_url)s" target="_blank">'
+                u'<img src="%(thumbnail_url)s"/></a></div>' % {
+                    'image_url': image_url,
+                    'thumbnail_url': thumbnail.url
+                }
+            )
+        try:
+            help_text = obj.get_image_preview_help_text()
+        except AttributeError:
+            pass
+        else:
+            html += u'<p class="help">%s</p>' % force_unicode(help_text)
+        html += u'</div>'
+        return mark_safe(unicode(html))
+
 
 class PreviewStackedInline(PreviewInline):
     template = 'admin/edit_inline/stacked.html'
@@ -28,12 +71,13 @@ class PreviewStackedInline(PreviewInline):
 class PreviewTabularInline(PreviewInline):
     template = 'admin/edit_inline/tabular.html'
 
+
 # Form classes ------------------------------------------------------------
-    
+
 class PreviewWidget(forms.widgets.Input):
     is_hidden = False
     input_type = 'text'
-    
+
     def __init__(self, *args, **kwargs):
         self.instance = kwargs.pop('instance', None)
         self.form = kwargs.pop('form', None)
@@ -52,7 +96,11 @@ class ImagePreviewWidget(PreviewWidget):
             options = dict(size=(120, 120), crop=False)
             html = u'<div class="adminboost-preview">'
             for image in images:
-                thumbnail = get_thumbnailer(image.file).get_thumbnail(options)
+                try:
+                    thumbnail = get_thumbnailer(image.file).get_thumbnail(
+                        options)
+                except InvalidImageFormatError:
+                    continue
                 if isinstance(image.file, Thumbnailer):
                     image_url = default_storage.url(force_unicode(image.file.name))
                 else:
@@ -95,7 +143,7 @@ class PreviewInlineForm(forms.ModelForm):
             instance = kwargs.get('instance', None), form=self)
         self.fields.insert(0, 'preview', preview_field)
         self.base_fields.insert(0, 'preview', preview_field)
-        
+
     class Media:
         css = { 
             'all': ("%sadminboost/styles.css" % settings.STATIC_URL,)
