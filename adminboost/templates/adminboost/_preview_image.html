@@ -2,6 +2,8 @@
 {{ super_output }}
 {% if image %}
 	<p class='file-upload'>
-		<img src="{% thumbnail image preview_size upscale %}" />
+        {% thumbnail image preview_size as thumb %}
+		    <img src="{{ thumb.url }}" />
+        {% endthumbnail %}
 	</p>
 {% endif %}
