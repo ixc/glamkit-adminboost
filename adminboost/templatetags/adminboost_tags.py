@@ -68,8 +68,12 @@ def edit_link(context, object, label=None):
 
     # If the user has permission to change the Model or the specific object,
     # render the edit icon.
-    if perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name))\
-    or perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name), object):
+    if (
+        perms.user.is_authenticated() and (
+            perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name)) or
+            perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name), object)
+        )
+    ):
         url = reverse(
             'admin:{0}_{1}_change'.format(app_label, class_name),
             args=[object.pk]
