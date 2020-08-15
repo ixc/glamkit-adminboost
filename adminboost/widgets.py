@@ -27,7 +27,7 @@ def render_edit_link(obj, db_field, popup=True, request=None):
     change_permission = '%s.change_%s' % (
         obj._meta.app_label, obj._meta.object_name.lower())
     if request and not request.user.has_perm(change_permission, obj):
-        return u'<strong>%s</strong>' % escape(smart_unicode(obj))
+        return '<strong>%s</strong>' % escape(smart_unicode(obj))
     try:
         change_url = reverse(
             "admin:%s_%s_change" % (
@@ -79,7 +79,7 @@ class AlwaysRenderLabel(object):
             name, value, attrs=attrs)
         if not value:
             output = mark_safe(
-                u''.join(
+                ''.join(
                     [output, self.label_for_value(None)]))
         return output
 
@@ -114,7 +114,7 @@ class VerboseManyToManyRawIdWidget(AlwaysRenderLabel, ManyToManyRawIdWidget):
         self.db_field = db_field
 
     def label_for_value(self, value):
-        values = filter(bool, (value or '').split(','))
+        values = list(filter(bool, (value or '').split(',')))
         links = []
         key = self.rel.get_related_field().name
         for v in values:
@@ -123,7 +123,7 @@ class VerboseManyToManyRawIdWidget(AlwaysRenderLabel, ManyToManyRawIdWidget):
                     self.db).get(**{key: v})
                 links.append(render_edit_link(obj, self.db_field))
             except (ValueError, self.rel.to.DoesNotExist):
-                links += [u'???']
+                links += ['???']
         return render_edit_links(
             self.db_field.model, links, self.db_field)
 

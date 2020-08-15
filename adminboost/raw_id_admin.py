@@ -46,7 +46,7 @@ class BaseImprovedRawIdAdmin(object):
         Show the edit links.
         """
         ids = [int(v.strip()) for v
-                in request.GET.get('ids', '').split(u',') if v.strip()]
+                in request.GET.get('ids', '').split(',') if v.strip()]
         try:
             db_field = self.model._meta.get_field(field_name)
         except FieldDoesNotExist:

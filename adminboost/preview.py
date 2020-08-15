@@ -58,7 +58,7 @@ class ImagePreviewWidget(PreviewWidget):
         if not self.form.preview_instance_required or self.instance is not None:
             images = self.form.get_images(self.instance)
             options = dict(size=(120, 120), crop=False)
-            html = u'<div class="adminboost-preview">'
+            html = '<div class="adminboost-preview">'
             for image in images:
                 try:
                     thumbnail = get_thumbnailer(image.file).get_thumbnail(options)
@@ -69,20 +69,20 @@ class ImagePreviewWidget(PreviewWidget):
                 else:
                     image_url = image.file.url
                 html += (
-                    u'<div class="adminboost-preview-thumbnail">'
-                    u'<a href="%(image_url)s" target="_blank">'
-                    u'<img src="%(thumbnail_url)s"/></a></div>' % {
+                    '<div class="adminboost-preview-thumbnail">'
+                    '<a href="%(image_url)s" target="_blank">'
+                    '<img src="%(thumbnail_url)s"/></a></div>' % {
                         'image_url': image_url,
                         'thumbnail_url': thumbnail.url
                     }
                 )
             help_text = self.form.get_preview_help_text(self.instance)
             if help_text is not None:
-                html += u'<p class="help">%s</p>' % force_unicode(help_text)
-            html += u'</div>'
-            return mark_safe(unicode(html))
+                html += '<p class="help">%s</p>' % force_unicode(help_text)
+            html += '</div>'
+            return mark_safe(str(html))
         else:
-            return u''
+            return ''
         
 class PreviewField(forms.Field):
     """ Dummy "field" to provide preview thumbnail. """
