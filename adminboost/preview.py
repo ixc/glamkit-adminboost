@@ -4,7 +4,7 @@ from django.utils.safestring import mark_safe
 from django.contrib.admin.options import InlineModelAdmin
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 
 from easy_thumbnails.files import get_thumbnailer, Thumbnailer
 from easy_thumbnails.exceptions import InvalidImageFormatError
@@ -65,7 +65,7 @@ class ImagePreviewWidget(PreviewWidget):
                 except InvalidImageFormatError:
                     continue
                 if isinstance(image.file, Thumbnailer):
-                    image_url = default_storage.url(force_unicode(image.file.name))
+                    image_url = default_storage.url(force_text(image.file.name))
                 else:
                     image_url = image.file.url
                 html += (
@@ -78,7 +78,7 @@ class ImagePreviewWidget(PreviewWidget):
                 )
             help_text = self.form.get_preview_help_text(self.instance)
             if help_text is not None:
-                html += '<p class="help">%s</p>' % force_unicode(help_text)
+                html += '<p class="help">%s</p>' % force_text(help_text)
             html += '</div>'
             return mark_safe(str(html))
         else:
