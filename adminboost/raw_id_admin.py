@@ -1,5 +1,10 @@
 import django
-from django.conf.urls.defaults import patterns, url
+
+try:
+    from django.conf.urls import url  # >= 1.4
+except ImportError:
+    from django.conf.urls.defaults import url
+
 from django.contrib import admin
 from django.core.urlresolvers import clear_url_caches
 from django.db.models.fields import FieldDoesNotExist
@@ -62,14 +67,13 @@ class BaseImprovedRawIdAdmin(object):
         gets updated via the "edit" link on the main model, so that the
         preview can be updated on save.
         """
-        return patterns(
-            '',
+        return [
             url(r'edit-links/(?P<field_name>\w+)/',
                 self.admin_site.admin_view(self.render_edit_links),
                 name='%s_%s_render_edit_links' % (
                     self.model._meta.app_label,
                     self.model._meta.object_name.lower())),
-        ) + super(BaseImprovedRawIdAdmin, self).get_urls()
+        ] + super(BaseImprovedRawIdAdmin, self).get_urls()
 
 
 class ImprovedRawIdAdmin(BaseImprovedRawIdAdmin, admin.ModelAdmin):

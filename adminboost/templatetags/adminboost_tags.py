@@ -68,9 +68,12 @@ def edit_link(context, object, label=None):
 
     # If the user has permission to change the Model or the specific object,
     # render the edit icon.
-    if perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name))\
-    or perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name), object):
-        static_url = context['STATIC_URL']
+    if (
+        perms.user.is_authenticated() and (
+            perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name)) or
+            perms.user.has_perm('{0}.change_{1}'.format(app_label, class_name), object)
+        )
+    ):
         url = reverse(
             'admin:{0}_{1}_change'.format(app_label, class_name),
             args=[object.pk]
@@ -79,6 +82,13 @@ def edit_link(context, object, label=None):
             label = '<span class="admin-edit-label">{0}</span>'.format(label)
         else:
             label = ''
-        return '<a class="admin-edit-link" href="{0}">{2}<img src="{1}admin/img/icon_changelink.gif" title="Edit" alt="Edit"/></a>'.format(url, static_url, label)
+        return loader.render_to_string(
+            "adminboost/_edit_link.html",
+            {
+                'url': url,
+                'static_url': settings.STATIC_URL,
+                'label': label,
+            }
+        )
     else:
         return ''

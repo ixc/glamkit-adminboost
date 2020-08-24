@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.contrib.admin.options import InlineModelAdmin
@@ -33,27 +34,31 @@ class PreviewInline(InlineModelAdmin):
         )
         return [(None, {'fields': fields})]
 
+
 class PreviewStackedInline(PreviewInline):
     template = 'admin/edit_inline/stacked.html'
+
 
 class PreviewTabularInline(PreviewInline):
     template = 'admin/edit_inline/tabular.html'
 
+
 # Form classes ------------------------------------------------------------
-    
+
+
 class PreviewWidget(forms.widgets.Input):
     is_hidden = False
     input_type = 'text'
-    
+
     def __init__(self, *args, **kwargs):
         self.instance = kwargs.pop('instance', None)
         self.form = kwargs.pop('form', None)
         super(PreviewWidget, self).__init__(*args, **kwargs)
 
+
 class ImagePreviewWidget(PreviewWidget):
+
     def render(self, name, data, attrs=None):
-        if attrs is None:
-            attrs = {}
 
         if not self.form.preview_instance_required or self.instance is not None:
             images = self.form.get_images(self.instance)
@@ -93,12 +98,13 @@ class PreviewField(forms.Field):
             instance=self.instance, form=self.form)
         super(PreviewField, self).__init__(*args, **kwargs)
 
+
 class PreviewInlineForm(forms.ModelForm):
     # If True, the widget will only be displayed if an
     # instance of the model exists (i.e. the object
     # has already been saved at least once).
     preview_instance_required = True
-    
+
     def __init__(self, *args, **kwargs):
         super(PreviewInlineForm, self).__init__(*args, **kwargs)
         preview_field = PreviewField(
@@ -108,14 +114,15 @@ class PreviewInlineForm(forms.ModelForm):
         self.base_fields.insert(0, 'preview', preview_field)
 
     class Media:
-        css = { 
-            'all': ("%sadminboost/styles.css" % settings.STATIC_URL,)
+        css = {
+            'all': ("%sadminboost/styles.css" % django_settings.STATIC_URL,)
         }
-    
+
+
 class ImagePreviewInlineForm(PreviewInlineForm):
-    
+
     preview_widget_class = ImagePreviewWidget
-    
+
     def get_preview_help_text(self, instance):
         """
         Returns text that should be displayed under

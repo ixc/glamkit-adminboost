@@ -3,10 +3,13 @@ from django.contrib import admin
 from django.contrib.admin.widgets import (
     ManyToManyRawIdWidget, ForeignKeyRawIdWidget, AdminFileWidget)
 from django.core.urlresolvers import reverse, NoReverseMatch
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_unicode
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+
+from adminboost.preview import get_preview_engine
 
 from .settings import ADMINBOOST_PREVIEW_SIZE
 
@@ -141,15 +144,16 @@ class PreviewImageWidget(AdminFileWidget):
     def render(self, name, value, *args, **kwargs):
         super_output = super(PreviewImageWidget, self).render(
             name, value, *args, **kwargs)
-        try:
-            return render_to_string('adminboost/_preview_image.html',
-                    {
-                    'super_output': super_output,
-                    'image': value,
-                    'preview_size': '%sx%s' % self.preview_size,
-                    })
-        except ValueError:
+        if isinstance(value, InMemoryUploadedFile):
             # If the submitted form is invalid, ``value`` is ``InMemoryUploadedFile``,
             # rather then expected ``FieldFile``, which causes ``easy_thumbnails``
             # to crash. Return ``super_output`` in that case.
             return super_output
+        else:
+            # Normal operation
+            return render_to_string(get_preview_engine().get_image_template(), {
+                'super_output': super_output,
+                'image': value,
+                'preview_size': '%sx%s' % self.preview_size,
+            })
+
